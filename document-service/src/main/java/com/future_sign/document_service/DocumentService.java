@@ -6,6 +6,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,7 +24,7 @@ public class DocumentService {
         return documentRepository.save(document);
     }
 
-    public byte[] signDocument(Long id, String username) throws IOException {
+    public byte[] signDocument(Long id, String username) throws IOException, ResourceNotFoundException {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 

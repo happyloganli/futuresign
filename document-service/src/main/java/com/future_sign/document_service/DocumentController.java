@@ -23,7 +23,7 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}/sign")
-    public ResponseEntity<byte[]> signDocument(@PathVariable Long id, Authentication authentication) throws IOException {
+    public ResponseEntity<byte[]> signDocument(@PathVariable Long id, Authentication authentication) throws IOException, ResourceNotFoundException {
         String username = authentication.getName();
         byte[] signedDocument = documentService.signDocument(id, username);
         return ResponseEntity
