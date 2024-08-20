@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -29,5 +30,24 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public UserDto authenticateUser(String username, String password) {
+        // Fetch user by username
+        Optional<User> userOptional = userRepository.findByUsername(username);
+
+        // Check if user exists and password matches
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Check password
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                // If authentication is successful, return the UserDto
+                return new UserDto(user.getUsername(), user.getEmail());
+            }
+        }
+
+        // If authentication fails, return null
+        return null;
     }
 }
