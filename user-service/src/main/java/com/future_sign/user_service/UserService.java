@@ -1,6 +1,8 @@
 package com.future_sign.user_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +34,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public UserDto authenticateUser(String username, String password) {
+    public ResponseEntity<String> authenticateUser(String username, String password) {
         // Fetch user by username
         Optional<User> userOptional = userRepository.findByUsername(username);
 
@@ -43,11 +45,11 @@ public class UserService {
             // Check password
             if (passwordEncoder.matches(password, user.getPassword())) {
                 // If authentication is successful, return the UserDto
-                return new UserDto(user.getUsername(), user.getEmail());
+                return ResponseEntity.ok().body("Authentication successful");
             }
         }
 
         // If authentication fails, return null
-        return null;
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
     }
 }

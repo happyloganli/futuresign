@@ -32,4 +32,9 @@ public class DocumentController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(signedDocument);
     }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "hello";
+    }
 }

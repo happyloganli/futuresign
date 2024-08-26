@@ -1,7 +1,6 @@
 package com.future_sign.user_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +9,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
+    @Autowired
+    private UserRepository userRepository;
+
     @Autowired
     private UserService userService;
 
@@ -34,13 +37,30 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+
     @PostMapping("/authenticate")
-    public ResponseEntity<UserDto> authenticateUser(@RequestBody AuthenticationRequest request) {
-        UserDto user = userService.authenticateUser(request.getUsername(), request.getPassword());
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<String> authenticateUser(@RequestBody AuthRequest authRequest) {
+        return userService.authenticateUser(authRequest.getUsername(), authRequest.getPassword());
+    }
+}
+
+class AuthRequest {
+    private String username;
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
