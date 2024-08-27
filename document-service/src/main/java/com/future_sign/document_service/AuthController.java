@@ -2,7 +2,6 @@ package com.future_sign.document_service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,12 +9,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("api/auth")
 public class AuthController {
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
-    private UserServiceClient userServiceClient;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private final JwtUtil jwtUtil;
+    private final UserServiceClient userServiceClient;
+
+    public AuthController(JwtUtil jwtUtil, UserServiceClient userServiceClient) {
+        this.jwtUtil = jwtUtil;
+        this.userServiceClient = userServiceClient;
+    }
 
     @PostMapping("/token")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) {
@@ -72,14 +74,4 @@ class AuthRequest {
     }
 }
 
-class AuthResponse {
-    private final String jwt;
-
-    public AuthResponse(String jwt) {
-        this.jwt = jwt;
-    }
-
-    public String getJwt() {
-        return jwt;
-    }
-}
+record AuthResponse(String jwt) {}

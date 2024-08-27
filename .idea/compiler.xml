@@ -8,12 +8,14 @@
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
         <module name="user-service" />
+        <module name="syntax-service" />
         <module name="naming-server" />
         <module name="document-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="FutureSign" target="22" />
+      <module name="llm-service" target="22" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -21,7 +23,9 @@
       <module name="FutureSign" options="-parameters" />
       <module name="config-server" options="-parameters" />
       <module name="document-service" options="-parameters" />
+      <module name="llm-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
+      <module name="syntax-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>
   </component>
