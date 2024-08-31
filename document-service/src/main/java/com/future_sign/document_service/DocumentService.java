@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import io.minio.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.UUID;
 
 
 @Service
@@ -35,27 +36,28 @@ public class DocumentStorageService {
         }
     }
 
-    public void uploadPdf(String objectName, byte[] content) {
+    public String uploadPdf(byte[] content) {
         try {
+            String fileKey = UUID.randomUUID().toString();
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(objectName)
+                            .object(fileKey)
                             .stream(new ByteArrayInputStream(content), content.length, -1)
                             .contentType("application/pdf")
                             .build());
-            System.out.println("File uploaded successfully to bucket " + bucketName + " as " + objectName);
+            return fileKey;
         } catch (Exception e) {
             throw new RuntimeException("Error uploading file to MinIO", e);
         }
     }
 
-    public byte[] downloadPdf(String objectName) {
+    public byte[] downloadPdf(String fileKey) {
         try {
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(objectName)
+                            .object(fileKey)
                             .build());
             return stream.readAllBytes();
         } catch (Exception e) {
