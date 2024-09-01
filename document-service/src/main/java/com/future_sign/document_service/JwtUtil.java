@@ -14,7 +14,7 @@ import java.util.function.Function;
 public class JwtUtil {
 
     private String SECRET_KEY = "904aeb0315642a2f706a94f79de7a3ff29a0e53ec8199b980f46fc8579e9c0bd"; // Replace with a secure secret key
-    private final long JWT_TOKEN_VALIDITY = 5 * 60 * 60;
+    private final long JWT_TOKEN_VALIDITY = 120 * 60 * 60;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

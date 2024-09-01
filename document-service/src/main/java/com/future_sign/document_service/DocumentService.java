@@ -1,5 +1,6 @@
 package com.future_sign.document_service;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.minio.*;
@@ -9,22 +10,24 @@ import java.util.UUID;
 
 
 @Service
-public class DocumentStorageService {
+public class DocumentService {
 
     private final MinioClient minioClient;
     private final String bucketName;
+    private final RabbitTemplate rabbitTemplate;
 
-    public DocumentStorageService(
+    public DocumentService(
             @Value("${minio.endpoint}") String endpoint,
             @Value("${minio.access-key}") String accessKey,
             @Value("${minio.secret-key}") String secretKey,
-            @Value("${minio.bucket-name}") String bucketName) {
+            @Value("${minio.bucket-name}") String bucketName,
+            RabbitTemplate rabbitTemplate) {
         this.bucketName = bucketName;
         this.minioClient = MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
-
+        this.rabbitTemplate = rabbitTemplate;
         try {
             boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!found) {

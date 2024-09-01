@@ -1,10 +1,10 @@
-package com.future_sign.document_service;
+package com.futuresign.signing.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DocumentServiceApplicationTests {
+class SigningServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

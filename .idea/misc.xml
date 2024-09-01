@@ -11,6 +11,7 @@
         <option value="$PROJECT_DIR$/document-service/pom.xml" />
         <option value="$PROJECT_DIR$/llm-service/pom.xml" />
         <option value="$PROJECT_DIR$/syntax-service/pom.xml" />
+        <option value="$PROJECT_DIR$/signing-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

@@ -11,6 +11,7 @@
         <module name="syntax-service" />
         <module name="naming-server" />
         <module name="document-service" />
+        <module name="signing-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -25,6 +26,7 @@
       <module name="document-service" options="-parameters" />
       <module name="llm-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
+      <module name="signing-service" options="-parameters" />
       <module name="syntax-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

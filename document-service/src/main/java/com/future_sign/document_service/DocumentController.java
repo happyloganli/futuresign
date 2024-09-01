@@ -13,37 +13,35 @@ import java.io.IOException;
 @RequestMapping("/api/documents")
 public class DocumentController {
 
-    private final DocumentStorageService storageService;
+    private final DocumentService documentService;
 
     @Autowired
-    public DocumentController(DocumentStorageService storageService) {
-        this.storageService = storageService;
+    public DocumentController(DocumentService documentService) {
+        this.documentService = documentService;
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("Please select a file to upload");
         }
-
         try {
-            String fileName = file.getOriginalFilename();
-            storageService.uploadPdf(fileName, file.getBytes());
-            return ResponseEntity.ok("File uploaded successfully: " + fileName);
+            String fileKey = documentService.uploadPdf(file.getBytes());
+            return ResponseEntity.ok(new FileUploadResponse(fileKey));
         } catch (IOException e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to upload file: " + e.getMessage());
         }
     }
 
-    @GetMapping("/download/{fileName}")
-    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable String fileName) {
+    @GetMapping("/download/{fileKey}")
+    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable String fileKey) {
         try {
-            byte[] data = storageService.downloadPdf(fileName);
+            byte[] data = documentService.downloadPdf(fileKey);
             ByteArrayResource resource = new ByteArrayResource(data);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filekey=" + fileKey)
                     .contentType(MediaType.APPLICATION_PDF)
                     .contentLength(data.length)
                     .body(resource);
@@ -52,4 +50,22 @@ public class DocumentController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello World";
+    }
 }
+
+class FileUploadResponse {
+    String fileKey;
+    public FileUploadResponse(String fileKey) {
+        this.fileKey = fileKey;
+    }
+
+    public String getFileKey() {
+        return fileKey;
+    }
+}
+
+
