@@ -2,7 +2,6 @@ package com.futuresign.signing.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,9 +22,9 @@ public class SigningController {
     }
 
     @GetMapping("/status")
-    public ResponseEntity<?> checkSignatureStatus(@RequestParam String id) {
+    public ResponseEntity<?> checkSignatureStatus(@RequestBody StatusRequest request) {
         try {
-            StatusResponse response = signingService.checkSignatureStatus(id);
+            StatusResponse response = signingService.checkSignatureStatus(request.getId());
             return ResponseEntity.ok().body(response);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -33,15 +32,20 @@ public class SigningController {
             return ResponseEntity.status(500).body("Error checking signature status: " + e.getMessage());
         }
     }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello World";
+    }
 }
 
 class SignatureRequest {
     private String username;
-    private String filekey;
+    private String fileKey;
 
-    public SignatureRequest(String username, String filekey) {
+    public SignatureRequest(String username, String fileKey) {
         this.username = username;
-        this.filekey = filekey;
+        this.fileKey = fileKey;
     }
 
     public String getUsername() {
@@ -52,12 +56,12 @@ class SignatureRequest {
         this.username = username;
     }
 
-    public String getFilekey() {
-        return filekey;
+    public String getFileKey() {
+        return fileKey;
     }
 
-    public void setFilekey(String filekey) {
-        this.filekey = filekey;
+    public void setFileKey(String fileKey) {
+        this.fileKey = fileKey;
     }
 }
 
@@ -76,6 +80,25 @@ class SignatureResponse {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+}
+
+class StatusRequest{
+    private String id;
+
+    public StatusRequest() {
+    }
+
+    public StatusRequest(String id) {
+        this.id = id;
     }
 
     public String getId() {

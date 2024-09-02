@@ -35,16 +35,11 @@ public class DocumentController {
     }
 
     @GetMapping("/download/{fileKey}")
-    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable String fileKey) {
+    public ResponseEntity<String> downloadFile(@PathVariable String fileKey) {
         try {
-            byte[] data = documentService.downloadPdf(fileKey);
-            ByteArrayResource resource = new ByteArrayResource(data);
+            String data = documentService.downloadPdf(fileKey);
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filekey=" + fileKey)
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .contentLength(data.length)
-                    .body(resource);
+            return ResponseEntity.ok(data);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();

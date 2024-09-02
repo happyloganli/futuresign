@@ -1,9 +1,11 @@
 package com.futuresign.signing.service;
 
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfSignatureAppearance;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.security.*;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.StampingProperties;
+import com.itextpdf.signatures.*;
+
 import io.minio.*;
 import jakarta.persistence.EntityNotFoundException;
 import java.io.ByteArrayInputStream;
@@ -12,11 +14,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.UUID;
 
 @Service
@@ -26,6 +27,10 @@ public class SigningService {
     private SignFileRepository signFileRepository;
     private final MinioClient minioClient;
     private final String bucketName;
+    private static final String KEYSTORE_PASSWORD = "mypassword";
+    private static final String KEY_ALIAS = "mykey";
+    private static final String KEYSTORE_NAME = "mykeystore.p12";
+
 
     public SigningService(
             @Value("${minio.endpoint}") String endpoint,
@@ -52,7 +57,7 @@ public class SigningService {
         SignFile signFile = new SignFile();
         signFile.setId(UUID.randomUUID().toString());
         signFile.setUsername(request.getUsername());
-        signFile.setFileKey(request.getFilekey());
+        signFile.setFileKey(request.getFileKey());
         signFile.setStatus("pending");
 
         signFileRepository.save(signFile);
@@ -61,20 +66,20 @@ public class SigningService {
         GetObjectResponse response = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(bucketName)
-                        .object(request.getFilekey())
+                        .object(request.getFileKey())
                         .build()
         );
 
         byte[] documentData = response.readAllBytes();
 
         // Sign the document
-        byte[] signedDocument = signDocument(request.getUsername(), documentData);
+        byte[] signedDocument = signDocument(documentData);
 
         // Upload the signed document back to Minio
         minioClient.putObject(
                 PutObjectArgs.builder()
-                        .bucket("your-signed-bucket-name")
-                        .object("signed_" + request.getFilekey())
+                        .bucket(bucketName)
+                        .object("signed_" + request.getFileKey())
                         .stream(new ByteArrayInputStream(signedDocument), signedDocument.length, -1)
                         .build()
         );
@@ -91,34 +96,39 @@ public class SigningService {
         return new StatusResponse(signFile.getStatus());
     }
 
-    private byte[] signDocument(String username, byte[] documentData) throws Exception {
-        // Load the keystore
+    private byte[] signDocument(byte[] documentData) throws Exception {
+
         KeyStore keystore = KeyStore.getInstance("PKCS12");
-        FileInputStream fis = new FileInputStream("path/to/keystore.p12");
-        keystore.load(fis, "keystorePassword".toCharArray());
+        try (InputStream keystoreStream = getClass().getClassLoader().getResourceAsStream(KEYSTORE_NAME)) {
+            if (keystoreStream == null) {
+                throw new IllegalStateException("Keystore file not found in resources: " + KEYSTORE_NAME);
+            }
+            keystore.load(keystoreStream, KEYSTORE_PASSWORD.toCharArray());
+        }
 
-        // Get the private key
-        PrivateKey privateKey = (PrivateKey) keystore.getKey("alias", "keyPassword".toCharArray());
+        // Get the private key and certificate chain
+        PrivateKey privateKey = (PrivateKey) keystore.getKey(KEY_ALIAS, KEYSTORE_PASSWORD.toCharArray());
+        Certificate[] certificateChain = keystore.getCertificateChain(KEY_ALIAS);
 
-        // Get the certificate
-        X509Certificate cert = (X509Certificate) keystore.getCertificate("alias");
+        // Create PdfReader and ByteArrayOutputStream
+        PdfReader reader = new PdfReader(new ByteArrayInputStream(documentData));
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        // Create a PDFReader instance
-        PdfReader reader = new PdfReader(documentData);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PdfStamper stamper = PdfStamper.createSignature(reader, baos, '\0');
+        // Create PdfSigner
+        PdfSigner signer = new PdfSigner(reader, outputStream, new StampingProperties());
 
-        // Create the signature appearance
-        PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
-        appearance.setReason("Official Document");
-        appearance.setLocation("Digital Signature");
+        // Create signature appearance
+        PdfSignatureAppearance appearance = signer.getSignatureAppearance();
+        appearance.setReason("Reason for Signing");
+        appearance.setLocation("Signer Location");
 
         // Create the signature
-        ExternalDigest digest = new BouncyCastleDigest();
-        ExternalSignature signature = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, null);
-        MakeSignature.signDetached(appearance, digest, signature, new Certificate[]{cert}, null, null, null, 0, MakeSignature.CryptoStandard.CMS);
+        IExternalSignature pks = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, null);
+        IExternalDigest digest = new BouncyCastleDigest();
 
-        stamper.close();
-        return baos.toByteArray();
+        // Sign the document using the detached mode, CMS or CAdES equivalent.
+        signer.signDetached(digest, pks, certificateChain, null, null, null, 0, PdfSigner.CryptoStandard.CMS);
+
+        return outputStream.toByteArray();
     }
 }

@@ -1,11 +1,13 @@
 package com.future_sign.document_service;
 
+import io.minio.http.Method;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.minio.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.UUID;
 
 
@@ -55,16 +57,20 @@ public class DocumentService {
         }
     }
 
-    public byte[] downloadPdf(String fileKey) {
+    public String downloadPdf(String fileKey) {
         try {
-            InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
+            // Generate a pre-signed URL that is valid for 1 hour (3600 seconds)
+            String url = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
                             .bucket(bucketName)
                             .object(fileKey)
+                            .expiry(3600) // URL expiration time in seconds
                             .build());
-            return stream.readAllBytes();
+
+            return url;
         } catch (Exception e) {
-            throw new RuntimeException("Error downloading file from MinIO", e);
+            throw new RuntimeException("Error generating download link for file from MinIO", e);
         }
     }
 }
