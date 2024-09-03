@@ -6,8 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.minio.*;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.net.URL;
+
 import java.util.UUID;
 
 
@@ -16,7 +15,6 @@ public class DocumentService {
 
     private final MinioClient minioClient;
     private final String bucketName;
-    private final RabbitTemplate rabbitTemplate;
 
     public DocumentService(
             @Value("${minio.endpoint}") String endpoint,
@@ -29,7 +27,6 @@ public class DocumentService {
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
-        this.rabbitTemplate = rabbitTemplate;
         try {
             boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!found) {

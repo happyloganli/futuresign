@@ -9,6 +9,9 @@ import com.itextpdf.signatures.*;
 import io.minio.*;
 import jakarta.persistence.EntityNotFoundException;
 import java.io.ByteArrayInputStream;
+
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,10 +30,18 @@ public class SigningService {
     private SignFileRepository signFileRepository;
     private final MinioClient minioClient;
     private final String bucketName;
-    private static final String KEYSTORE_PASSWORD = "mypassword";
-    private static final String KEY_ALIAS = "mykey";
-    private static final String KEYSTORE_NAME = "mykeystore.p12";
-
+    @Value("${keystore.password}")
+    private String KEYSTORE_PASSWORD;
+    @Value("${key.alias}")
+    private String KEY_ALIAS;
+    @Value("${keystore.name}")
+    private String KEYSTORE_NAME;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    @Value("${signing.exchange.name}")
+    private String SIGNING_EXCHANGE_NAME;
+    @Value("${syntax.check.routing.key}")
+    private String SYNTAX_CHECK_ROUTING_KEY;
 
     public SigningService(
             @Value("${minio.endpoint}") String endpoint,
@@ -62,6 +73,8 @@ public class SigningService {
 
         signFileRepository.save(signFile);
 
+        publishSyntaxCheckEvent(request.getFileKey(), request.getUsername());
+
         // Fetch the document from Minio
         GetObjectResponse response = minioClient.getObject(
                 GetObjectArgs.builder()
@@ -79,7 +92,7 @@ public class SigningService {
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
-                        .object("signed_" + request.getFileKey())
+                        .object("signed_" + request.getFileKey() + ".pdf")
                         .stream(new ByteArrayInputStream(signedDocument), signedDocument.length, -1)
                         .build()
         );
@@ -131,4 +144,21 @@ public class SigningService {
 
         return outputStream.toByteArray();
     }
+
+    @RabbitListener(queues = "syntax_check_finished")
+    public void consumeSyntaxCheckEvent(SyntaxCheckFinishedEvent event) {
+        String fileKey = event.getFileKey();
+        String username = event.getUsername();
+        String checkResult = event.getResult();
+
+        System.out.println("Syntax check finished: " + fileKey);
+        System.out.println("Syntax check finished: " + username);
+        System.out.println("Syntax check finished: " + checkResult);
+    }
+
+    private void publishSyntaxCheckEvent(String fileKey, String username) {
+        SyntaxCheckEvent event = new SyntaxCheckEvent(fileKey, username);
+        rabbitTemplate.convertAndSend(SIGNING_EXCHANGE_NAME, SYNTAX_CHECK_ROUTING_KEY, event);
+    }
+
 }
